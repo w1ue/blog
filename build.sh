@@ -1,5 +1,8 @@
 #!/bin/bash
 
+rm -rf node_modules
+rm -rf public
+
 npm install --force
 
-nohup hexo s > /dev/null 2>&1
+hexo deploy
