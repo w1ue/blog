@@ -1,0 +1,3 @@
+[submodule "themes/hexo-wiki"]
+	path = themes/hexo-wiki
+	url = https://github.com/w1ue/hexo-wiki.git
