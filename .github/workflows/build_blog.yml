@@ -27,16 +27,16 @@ jobs:
       
       - name: Setup Node.js environment
         uses: actions/setup-node@v2.1.4
-        with: 
-          run: npm install
 
       # Runs a single command using the runners shell
       - name: Run build scripts
         run: |
           sudo npm install -g hexo-cli
+          npm --version
+          hexo --version
           ./build.sh
-          version=`git rev-parse HEAD`
           mv public blog
+          
       
       - name: ssh deploy
         # You may pin to the exact commit or the version.
