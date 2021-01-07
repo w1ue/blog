@@ -35,7 +35,8 @@ jobs:
         run: |
           sudo npm install -g hexo-cli
           ./build.sh
-          tar -czf blog.tar.gz public/*
+          version=`git rev-parse HEAD`
+          tar -czf w1ue_blog_${version:0:8}.tar.gz public/*
       
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v2.2.2
@@ -43,5 +44,5 @@ jobs:
           # Artifact name
           name: w1ue_blog
           # A file, directory or wildcard pattern that describes what to upload
-          path: $GITHUB_WORKSPACE/w1ue_blog.tar.gz
+          path: $GITHUB_WORKSPACE/w1ue_blog_*.tar.gz
           # The desired behavior if no files are found using the provided path.
