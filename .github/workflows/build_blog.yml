@@ -44,5 +44,5 @@ jobs:
           # Artifact name
           name: w1ue_blog
           # A file, directory or wildcard pattern that describes what to upload
-          path: $GITHUB_WORKSPACE/w1ue_blog_*.tar.gz
+          path: w1ue_blog_*.tar.gz
           # The desired behavior if no files are found using the provided path.
