@@ -55,3 +55,4 @@ jobs:
           SOURCE: blog/
           # Target directory
           TARGET: ${{ secrets.TARGET }}
+          ARGS: -av --delete
