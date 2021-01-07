@@ -55,4 +55,4 @@ jobs:
           SOURCE: blog/
           # Target directory
           TARGET: ${{ secrets.TARGET }}
-          ARGS: -av --delete
+          ARGS: -av --delete --chown=${{ secrets.REMOTE_USER }}:${{ secrets.REMOTE_USER }}
