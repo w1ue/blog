@@ -38,11 +38,14 @@ jobs:
           version=`git rev-parse HEAD`
           tar -czf w1ue_blog_${version:0:8}.tar.gz public/*
       
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v2.2.2
+      - name: Hexo Action
+        # You may pin to the exact commit or the version.
+        # uses: sma11black/hexo-action@08f5143fa402cdaccf9fc016d6bc91329f082eb0
+        uses: sma11black/hexo-action@v1.0.4
         with:
-          # Artifact name
-          name: w1ue_blog
-          # A file, directory or wildcard pattern that describes what to upload
-          path: w1ue_blog_*.tar.gz
-          # The desired behavior if no files are found using the provided path.
+          # Github user name
+          user_name: w1ue
+          # Github email
+          user_email: w1ue@outlook.com
+          # The deploy key for Github Pages repo
+          deploy_key: ${{ secrets.ACCESS_TOKEN }}
