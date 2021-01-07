@@ -32,7 +32,7 @@ jobs:
       - name: Run build scripts
         run: |
           ls -al $GITHUB_WORKSPACE
-          cd blog && ./build.sh
+          ./build.sh
           tar -czf blog.tar.gz public/*
       
       - name: Upload a Build Artifact
@@ -41,5 +41,5 @@ jobs:
           # Artifact name
           name: w1ue_blog
           # A file, directory or wildcard pattern that describes what to upload
-          path: $GITHUB_WORKSPACE/blog/w1ue_blog.tar.gz
+          path: $GITHUB_WORKSPACE/w1ue_blog.tar.gz
           # The desired behavior if no files are found using the provided path.
