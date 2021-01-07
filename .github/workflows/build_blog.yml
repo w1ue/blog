@@ -36,7 +36,7 @@ jobs:
           sudo npm install -g hexo-cli
           ./build.sh
           version=`git rev-parse HEAD`
-          tar -czf w1ue_blog_${version:0:8}.tar.gz public/*
+          mv public blog
       
       - name: ssh deploy
         # You may pin to the exact commit or the version.
@@ -52,6 +52,6 @@ jobs:
           # Remote port
           REMOTE_PORT: ${{ secrets.REMOTE_PORT }}
           # Source directory
-          SOURCE: public
+          SOURCE: blog/
           # Target directory
           TARGET: ${{ secrets.TARGET }}
