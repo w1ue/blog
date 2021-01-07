@@ -31,7 +31,7 @@ jobs:
       # Runs a single command using the runners shell
       - name: Run build scripts
         run: |
-          npm install -g hexo-cli
+          npm install hexo-cli
           ./build.sh
           tar -czf blog.tar.gz public/*
       
