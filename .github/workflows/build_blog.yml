@@ -33,6 +33,7 @@ jobs:
         run: |
           sudo npm install -g hexo-cli
           ./build.sh
+          ls -al public/*
           mv public blog
           
       
