@@ -27,11 +27,13 @@ jobs:
       
       - name: Setup Node.js environment
         uses: actions/setup-node@v2.1.4
+        with: 
+          run: npm install
 
       # Runs a single command using the runners shell
       - name: Run build scripts
         run: |
-          npm install hexo-cli
+          sudo npm install -g hexo-cli
           ./build.sh
           tar -czf blog.tar.gz public/*
       
