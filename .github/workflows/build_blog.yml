@@ -32,8 +32,6 @@ jobs:
       - name: Run build scripts
         run: |
           sudo npm install -g hexo-cli
-          npm --version
-          hexo --version
           ./build.sh
           mv public blog
           
