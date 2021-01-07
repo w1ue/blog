@@ -31,7 +31,7 @@ jobs:
       # Runs a single command using the runners shell
       - name: Run build scripts
         run: |
-          ls -al $GITHUB_WORKSPACE
+          npm install -g hexo-cli
           ./build.sh
           tar -czf blog.tar.gz public/*
       
