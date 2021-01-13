@@ -12,7 +12,6 @@
 </div>
 
 + **G1** 为原始图，A -> B 和 C，B -> C，从该依赖关系可看出，A 直接依赖了其后代 B 的后代，这里可以 A -> C 的依赖给删掉。
-
 + **G2** 为删除依赖关系后的图。
 
 
@@ -30,9 +29,7 @@
 
 在图 **G3** 中，按照上述分析，可以该 DAG 做如下处理：
 + 计算每个节点的非直接依赖节点，得到 ```A: {C, E}, B: {E}, C: {} D: {E} E: {}```
-
 + 遍历每个节点的直接节点，得到 ```A: {B, C, D}, B: {C}, C: {E}, D:{C, E}```
-
 + 求每个节点的非直接依赖节点和依赖节点的交集，得到 ```A: {C}, D: {E}```，即为需要移除的边
 
 ### 2.2 拓扑排序法
@@ -42,9 +39,7 @@
 对于该问题，一种可行的思路（方案一）如下：
 
 + 遍历 DAG 中的每一条边，start -> end
-
-+ 判断是否存在一条路径从 start 到 end，而非直接走 start -> end 这条边。例如存在一个 middle 节点，使得 start -> middle -> end
-
++ 判断是否存在一条路径从 start 到 end，而非直接走 start -> end 这条边。例如存在一个 middle 节点，满足start -> middle -> end
 + 若存在 2 的情况，则将当前边 start -> end 从 DAG 中删掉
 
 通过以上描述，我们可以看出思路虽然简单，但是寻找两个节点之间是否存在一条至少含有 1 个节点的路径还是有难度的。若单纯采用暴力来求解，时间复杂度会比较高（O(E*(V+E))），即每个节点开始遍历一遍来判断路径是否存在。这里不难看出，针对同样的路径，我们可能会遍历很多次。
@@ -56,13 +51,9 @@
 我们再回看一下这个方案，```遍历图中的每一条边```，这导致每次只有 start 和 end 节点这两个信息，需要通过二次遍历来判断其间接依赖关系。为了减少这些二次遍历，可考虑先对图做拓扑排序，然后基于拓扑排序和图中实际存在的边来做边的遍历，这样最大限度保留了边的依赖关系。此时，（方案二）可以修改为如下方式：
 
 + 获取拓扑排序列表
-
 + 创建新 DAG 用于存储结果
-
 + 针对拓扑排序中的每两个节点之间的边，判断原 DAG 中是否存在
-
 + 若存在则进一步判断两点之间是否存在其他路径，若不存在，则添加到新 DAG 中
-
 + 新 DAG 即为所求
 
 在方案二中，看起来并没有减少多少工作量，甚至还多计算了一次拓扑排序。其实我们可以优化判断两点之间是否存在其他路径这一流程，借助拓扑排序（顺序：入度为 0 的点到出度为 0 的点）和标记位来简化操作，无需从某个节点开始二次遍历。
@@ -70,11 +61,8 @@
 基于这个思路，每次在某个节点首次标记为 True 的时候，即为首次判断该边在原 DAG 中存在时，将该边添加到新 DAG 中。该首次标记的过程，即为直接依赖产生的过程，后续再出现标记时，则为通过其他点的非直接依赖，而这些也不必保留。由此，可得到最终方案（方案三）的大致流程如下。
 
 + 获取拓扑排序序列
-
 + 针对拓扑排序中的每两个节点之间的边，i 从 [1, n-1]，j 从 [i - 1, 0]，判断原 DAG 中是否存在
-
 + 若存在，则判断标记位是否为 False，若是则将当前边添加到新 DAG 中，并将标记位置为 True
-
 + 判断标记位是否为 True，若是则标记以 j 为结束节点的相关节点为 True，直至结束
 
 下面以一个具体例子讲解一下算法流程：
@@ -91,10 +79,20 @@
 
 四次迭代就不再赘述了，原理和前三次相同。
 
+**在上述算法流程中，j 的遍历顺序是否能修改成正序，为什么？**
+不能，考虑拓扑排序的特性，逆序意味着从距离 i 节点相对最近或者相对平级的节点开始遍历。这样在修改直接关联节点时，会按照较长的一条依赖关系来改。若按照正序的话，可能会把本来需要删除的边额外添加进去，使得结果不正确。如第 1 节中的 G1 所示，若改为正序，则可以看到算法流程如下所示：
+
+<div  align="center">    
+    <img src="../../../imgs/tr_g4.png" width = "660" height = "350" alt="examples" align=center />
+</div>
+
 ## 3. 算法实现
 ### 3.1 直接法
 ```python
-def get_redundant_edges(graph):
+from typing import Dict, Tuple, Set
+
+
+def get_redundant_edges(graph: Dict[str, set]) -> Set[Tuple]:
     undirect_nodes = {}
     for node, real_nodes in graph.items():
         current_undirect_nodes = set()
@@ -131,16 +129,17 @@ if __name__ == '__main__':
 
 ### 3.2 拓扑排序法
 ```python
+from typing import List, Dict, Tuple
 import networkx as nx
 
 
-def get_topological_sort_list(graph_edge_list):
+def get_topological_sort_list(graph_edge_list: List[Tuple]) -> List[str]:
     g = nx.DiGraph(graph_edge_list)
     return nx.topological_sort(g)
 
 
-def transitive_reduction(graph):
-    new_graph_edge_list = {}
+def transitive_reduction(graph: Dict[str, set]) -> Dict[str, set]:
+    new_graph = {}
     graph_edge_list = []
     for key, val in graph.items():
         graph_edge_list.extend((key, x) for x in val)
@@ -156,9 +155,13 @@ def transitive_reduction(graph):
         for j in range(i - 1, -1, -1):
             if (topo_list[j], topo_list[i]) in graph_edge_list:
                 if not exist_flag[j]:
-                    if topo_list[j] not in new_graph_edge_list:
-                        new_graph_edge_list[topo_list[j]] = set()
-                    new_graph_edge_list[topo_list[j]].add(topo_list[i])
+                    if topo_list[j] not in new_graph:
+                        new_graph[topo_list[j]] = set()
+                    new_graph[topo_list[j]].add(topo_list[i])
+
+                    # 用于添加空节点
+                    if topo_list[i] not in new_graph:
+                        new_graph[topo_list[i]] = set()
 
                 exist_flag[j] = True
 
@@ -167,7 +170,7 @@ def transitive_reduction(graph):
                     if end == topo_list[j]:
                         exist_flag[index_of_topo[start]] = True
 
-    return new_graph_edge_list
+    return new_graph
 
 
 if __name__ == '__main__':
@@ -179,6 +182,7 @@ if __name__ == '__main__':
 
 
 ## 4. 三方库中的实现
+未完待续...
 
 
 ## 参考链接
