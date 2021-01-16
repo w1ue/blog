@@ -32,6 +32,8 @@
 + 遍历每个节点的直接节点，得到 ```A: {B, C, D}, B: {C}, C: {E}, D:{C, E}```
 + 求每个节点的非直接依赖节点和依赖节点的交集，得到 ```A: {C}, D: {E}```，即为需要移除的边
 
+在该方案中，不难发现，在计算每个节点的非直接依赖节点时，我们可以借助缓存对算法作出优化，比如某个节点 D 同时是 A 和 B 的非直接依赖，若是可以把以 A 为根节点的子树缓存下来，那么在后续的计算中只需计算一次即可，无需每次都从头遍历一遍。
+
 ### 2.2 拓扑排序法
 
 该方法是在 stackoverflow 上面一个关于该算法的回答上找到了一个评论，由于无法下载到原始论文[3]，所以把这篇博客[2]看了一遍，大致整理一下思路写在这里。
@@ -89,10 +91,7 @@
 ## 3. 算法实现
 ### 3.1 直接法
 ```python
-from typing import Dict, Tuple, Set
-
-
-def get_redundant_edges(graph: Dict[str, set]) -> Set[Tuple]:
+def remove_redundant_edge_by_set(graph: Dict[str, set]) -> Dict[str, set]:
     undirect_nodes = {}
     for node, real_nodes in graph.items():
         current_undirect_nodes = set()
@@ -105,7 +104,6 @@ def get_redundant_edges(graph: Dict[str, set]) -> Set[Tuple]:
                     queue.append(next)
 
         undirect_nodes[node] = current_undirect_nodes
-    print("非直接依赖：", undirect_nodes)
 
     remove_edge = set()
     for node, edges in graph.items():
@@ -113,76 +111,140 @@ def get_redundant_edges(graph: Dict[str, set]) -> Set[Tuple]:
         if len(current_remove_edge) > 0:
             remove_edge |= set((node, x) for x in current_remove_edge)
 
-    print("需要移除的边：", remove_edge)
-    return remove_edge
+    new_graph = copy.deepcopy(graph)
+    for start, end in remove_edge:
+        new_graph[start].remove(end)
 
-
-if __name__ == '__main__':
-    graph = {
-        "A": {"B", "C", "D"}, "B": {"C"}, "C": {"E"}, "D": {"C", "E"}, "E": {}
-    }
-
-    removed_edge = get_redundant_edges(graph)
-    print(removed_edge)
+    return new_graph
 
 ```
 
 ### 3.2 拓扑排序法
 ```python
-from typing import List, Dict, Tuple
-import networkx as nx
+def remove_redundant_edge_by_sort(graph: Dict[str, set]) -> Dict[str, set]:
+    visited = {}
+    topo_list = []
 
+    def dfs(graph, node):
+        dfs[node] = 1
+        topo_list.append(node)
 
-def get_topological_sort_list(graph_edge_list: List[Tuple]) -> List[str]:
-    g = nx.DiGraph(graph_edge_list)
-    return nx.topological_sort(g)
+        for next in graph[node]:
+            if visited[next] == 0:
+                dfs(graph, next)
 
-
-def transitive_reduction(graph: Dict[str, set]) -> Dict[str, set]:
-    new_graph = {}
-    graph_edge_list = []
-    for key, val in graph.items():
-        graph_edge_list.extend((key, x) for x in val)
-
-    topo_list = list(get_topological_sort_list(graph_edge_list))
     index_of_topo = {x: index for index, x in enumerate(topo_list)}
 
     exist_flag = [False for x in graph]
+    new_edge_set = set()
     for i in range(1, len(topo_list)):
+        if len(graph[topo_list[i]]) == 0:
+            continue
+
         for j in range(i - 1):
             exist_flag[j] = False
 
         for j in range(i - 1, -1, -1):
-            if (topo_list[j], topo_list[i]) in graph_edge_list:
+            if topo_list[i] in graph[topo_list[j]]:
                 if not exist_flag[j]:
-                    if topo_list[j] not in new_graph:
-                        new_graph[topo_list[j]] = set()
-                    new_graph[topo_list[j]].add(topo_list[i])
-
-                    # 用于添加空节点
-                    if topo_list[i] not in new_graph:
-                        new_graph[topo_list[i]] = set()
-
-                exist_flag[j] = True
+                    new_edge_set.add((topo_list[j], topo_list[i]))
+                    exist_flag[j] = True
 
             if exist_flag[j]:
-                for start, end in graph_edge_list:
+                for start, end in new_edge_set:
                     if end == topo_list[j]:
                         exist_flag[index_of_topo[start]] = True
 
+    new_graph = {}
+    for start, end in new_edge_set:
+        if start not in new_graph:
+            new_graph[start] = set()
+
+        if end not in new_graph:
+            new_graph[end] = set()
+
+        new_graph[start].add(end)
+
     return new_graph
 
-
-if __name__ == '__main__':
-    graph = {
-        "A": {"B", "C", "D"}, "B": {"C"}, "C": {"E"}, "D": {"C", "E"}, "E": {}
-    }
-    print(transitive_reduction(graph))
 ```
 
+其中，首先用 dfs 获取拓扑排序列表，在此尝试过 networkx，发现在首次运行时性能较差，因此简单写了一个获取拓扑排序的步骤，为了可以清晰看到执行步骤就不单独抽取函数了。
 
-## 4. 三方库中的实现
-未完待续...
+## 4. 算法性能
+
+针对上述代码做了一个简单的测试，首先按照一定规则生成一组不同节点个数的图（包含固定个数个冗余边），分别调用两种方法并计算其运行时间，可得到其运行结果如下图所示：
+
+<div  align="center">    
+    <img src="../../../imgs/tr_g5.png" width = "400" height = "280" alt="examples" align=center />
+</div>
+
+图中横坐标表示节点个数，纵坐标表示运行时间。
+从图中可看出，set 方式随着问题规模的增大，呈指数级增长，而 sort 方式则呈线性增长，大致符合 O(V + E) 的规律。
+
+
+## 5. 三方库中的实现
+在 python 的 networkx 这个库中有这个方法，且可以直接调用，以下是源码，我们来简单分析以下整个流程。
+
+```python
+def transitive_reduction(G):
+    """ Returns transitive reduction of a directed graph
+
+    The transitive reduction of G = (V,E) is a graph G- = (V,E-) such that
+    for all v,w in V there is an edge (v,w) in E- if and only if (v,w) is
+    in E and there is no path from v to w in G with length greater than 1.
+
+    Parameters
+    ----------
+    G : NetworkX DiGraph
+        A directed acyclic graph (DAG)
+
+    Returns
+    -------
+    NetworkX DiGraph
+        The transitive reduction of `G`
+
+    Raises
+    ------
+    NetworkXError
+        If `G` is not a directed acyclic graph (DAG) transitive reduction is
+        not uniquely defined and a :exc:`NetworkXError` exception is raised.
+
+    References
+    ----------
+    https://en.wikipedia.org/wiki/Transitive_reduction
+
+    """
+    if not is_directed_acyclic_graph(G):
+        msg = "Directed Acyclic Graph required for transitive_reduction"
+        raise nx.NetworkXError(msg)
+    TR = nx.DiGraph()
+    TR.add_nodes_from(G.nodes())
+    descendants = {}
+    # count before removing set stored in descendants
+    check_count = dict(G.in_degree)
+    for u in G:
+        u_nbrs = set(G[u])
+        for v in G[u]:
+            if v in u_nbrs:
+                if v not in descendants:
+                    descendants[v] = {y for x, y in nx.dfs_edges(G, v)}
+                u_nbrs -= descendants[v]
+            check_count[v] -= 1
+            if check_count[v] == 0:
+                del descendants[v]
+        TR.add_edges_from((u, v) for v in u_nbrs)
+    return TR
+```
+
+在上述算法中，首先对传入参数做了校验，接着计算出每个节点的入度，然后遍历每个节点，计算方式和 set 方式类似，依次计算每个 node 节点的所有直接依赖节点和间接依赖节点，并作差集，利用入度来控制不会把依赖节点减至 0。整个算法的核心实现逻辑和 set 方式类似，只是看起来有多余的遍历，set 方式是一次计算，多次使用，而这个算法看起来有很多冗余的计算和遍历，时间耗时也会增加。
+下面是添加了该算法之后的测试数据，随着数据规模的增大，该算法的性能也在急剧恶化。
+
+<div  align="center">    
+    <img src="../../../imgs/tr_g6.png" width = "400" height = "280" alt="examples" align=center />
+</div>
+
+所以呢，如果追求性能，且对数据规模要求比较大的情况下，建议还是选择 sort 方式，如果只是快速实现验证效果，还是建议 networkx 挺好的，用起来简单粗暴，代码也不几行，就是性能差一点。
 
 
 ## 参考链接
