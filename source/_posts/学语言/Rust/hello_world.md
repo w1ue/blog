@@ -1,4 +1,4 @@
-# Hello, World!
+# Hello, rust!
 
 ## 0. 学习背景
 rust，静态编译型系统级语言，Mozilla 员工 Graydon Hoare 开发的业余项目，设计时集各编程语言之长，安全且可靠。
